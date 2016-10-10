@@ -9,6 +9,7 @@ export {
 } from './inline';
 export {
   getSelectedBlocksList,
+  getSelectionBlockes,
   getSelectedBlock,
   getAllBlocks,
   getSelectedBlocksType,
@@ -17,14 +18,20 @@ export {
   addLineBreakRemovingSelection,
   insertNewUnstyledBlock,
   clearEditorContent,
+  getSelectedBlocksMap
 } from './block';
 export {
   handleNewLine,
+  insertOrReplaceTab
 } from './keyPress';
 export {
   isListBlock,
-  changeDepth,
+  changeDepth
 } from './list';
+
+export {
+  getIndentation
+} from './text';
 
 // exports = {
 //   // Functions related to blocks

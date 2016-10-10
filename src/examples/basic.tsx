@@ -1,15 +1,15 @@
 // import "rc-editor-core/assets/index.less";
-import * as EditorCorePublic from "../";
-import * as React from "react";
-import * as ReactDOM from "react-dom";
-import { EditorState } from "draft-js";
+import * as EditorCorePublic from '../';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+import { EditorState } from 'draft-js';
 
 // import BasicStyle from "rc-editor-plugin-basic-style";
 // import Emoji from "rc-editor-plugin-emoji";
 // import "rc-editor-plugin-emoji/assets/index.css";
 
 // const plugins = [BasicStyle, Emoji];
-const toolbars = [["bold", "italic", "underline", "strikethrough", "|", "superscript", "subscript", "|", "emoji"]];
+const toolbars = [['bold', 'italic', 'underline', 'strikethrough', '|', 'superscript', 'subscript', '|', 'emoji']];
 
 export default class Editor extends React.Component<any, IEditorState> {
 
@@ -50,7 +50,7 @@ export default class Editor extends React.Component<any, IEditorState> {
 
     componentDidMount(): void {
         this.setState({
-            defaultValue: this.controls.editor.getEditorState("Hello World!!!"),
+            defaultValue: this.controls.editor.toEditorState('Hello World!!!'),
             value: null
         });
     }

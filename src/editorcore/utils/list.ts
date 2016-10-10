@@ -1,18 +1,15 @@
 
-import {
-  ContentState,
-  EditorState,
-  ContentBlock,
-  SelectionState
-} from 'draft-js';
+import * as DraftJS from 'draft-js';
 
 import { OrderedMap, List, OrderedSet, Map } from 'immutable';
+
+import * as Utils from './index';
 
 
 /**
 * Function returns size at a offset.
 */
-export function getStyleAtOffset(block: ContentBlock, stylePrefix: string, offset: number): any {
+export function getStyleAtOffset(block: DraftJS.ContentBlock, stylePrefix: string, offset: number): any {
   const styles = block.getInlineStyleAt(offset).toList();
   let prefix: string = stylePrefix.toLowerCase();
   const style = styles.filter((s) => s.substring(0, prefix.length) === prefix);
@@ -25,7 +22,7 @@ export function getStyleAtOffset(block: ContentBlock, stylePrefix: string, offse
 /**
 * Function to check if a block is of type list.
 */
-export function isListBlock(block: ContentBlock): boolean {
+export function isListBlock(block: DraftJS.ContentBlock): boolean {
   if (block) {
     const blockType: string = block.getType();
     return (
@@ -38,34 +35,39 @@ export function isListBlock(block: ContentBlock): boolean {
 
 
 /**
-  * Function to change depth of block(s).
-  */
-export function changeBlocksDepth(editorState: EditorState, adjustment: number, maxDepth: number): ContentState {
-  const selectionState: SelectionState = editorState.getSelection();
-  const contentState: ContentState = editorState.getCurrentContent();
-  let blockMap: OrderedMap<string, ContentBlock> = contentState.getBlockMap();
-  const blocks = this.getSelectedBlocksList(editorState).map(block => {
-    let depth: number = block.getDepth() + adjustment;
+* Function to change depth of block(s).
+*/
+function changeBlocksDepth(
+  editorState: DraftJS.EditorState,
+  adjustment: number,
+  maxDepth: number
+): DraftJS.ContentState {
+  const selectionState = editorState.getSelection();
+  const contentState = editorState.getCurrentContent();
+  let blockMap = contentState.getBlockMap();
+  let selectedBlocksMap = Utils.getSelectionBlockes(editorState);
+  const blocks = selectedBlocksMap.map(block => {
+    let depth = block.getDepth() + adjustment;
     depth = Math.max(0, Math.min(depth, maxDepth));
     return block.set('depth', depth);
   });
-
   blockMap = blockMap.merge(blocks as any);
-  contentState.merge(blockMap);
-  contentState.merge(selectionState);
-  // return contentState.merge({
-  //     blockMap as any,
-  //     selectionBefore: selectionState as any,
-  //     selectionAfter: selectionState as any,
-  // });
-  return contentState;
+  return contentState.merge({
+    blockMap,
+    selectionBefore: selectionState,
+    selectionAfter: selectionState,
+  }) as DraftJS.ContentState;
 }
 
 /**
 * Function will check various conditions for changing depth and will accordingly
 * either call function changeBlocksDepth or just return the call.
 */
-export function changeDepth(editorState: EditorState, adjustment: number, maxDepth: number): EditorState {
+export function changeDepth(
+  editorState: DraftJS.EditorState,
+  adjustment: number,
+  maxDepth: number
+): DraftJS.EditorState {
   const selection = editorState.getSelection();
   let key;
   if (selection.getIsBackward()) {
@@ -92,12 +94,13 @@ export function changeDepth(editorState: EditorState, adjustment: number, maxDep
     return editorState;
   }
   const adjustedMaxDepth = Math.min(blockAbove.getDepth() + 1, maxDepth);
-  const withAdjustment = this.changeBlocksDepth(
+  const withAdjustment = changeBlocksDepth(
     editorState,
     adjustment,
-    adjustedMaxDepth
+    maxDepth
   );
-  return EditorState.push(
+
+  return DraftJS.EditorState.push(
     editorState,
     withAdjustment,
     'adjust-depth'

@@ -45,13 +45,16 @@ module.exports = {
     loaders: [
       loaders.tsx,
       loaders.html,
-      loaders.css,
       loaders.svg,
       loaders.eot,
       loaders.woff,
       loaders.woff2,
       loaders.ttf,
       loaders.json,
+      {
+        test: /\.css$/,
+        loader: ExtractTextPlugin.extract("style-loader", "css-loader")
+      },
       {
         test: /\.less$/,
         loader: ExtractTextPlugin.extract("style-loader", "css-loader!less-loader")

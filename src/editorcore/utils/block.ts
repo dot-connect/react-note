@@ -6,6 +6,24 @@ import {
   OrderedMap,
   List,
 } from 'immutable';
+import Constaints from '../../constants';
+
+/**
+* Function returns collection of currently selected blocks.
+*/
+export function getSelectedBlocksMap(editorState: DraftJS.EditorState): any {
+  const selectionState = editorState.getSelection();
+  const contentState = editorState.getCurrentContent();
+  const startKey = selectionState.getStartKey();
+  const endKey = selectionState.getEndKey();
+  const blockMap = contentState.getBlockMap();
+  return blockMap
+    .toSeq()
+    .skipUntil((_, k) => k === startKey)
+    .takeUntil((_, k) => k === endKey)
+    .concat([[endKey, blockMap.get(endKey)]] as any);
+}
+
 
 export function getSelectionBlockes(editorState: DraftJS.EditorState): OrderedMap<string, DraftJS.ContentBlock> {
   // blockDelimiter = blockDelimiter || '\n';
@@ -175,3 +193,4 @@ export function getTextSelection(contentState: DraftJS.ContentState, selection: 
         })
         .join(blockDelimiter);
 }
+

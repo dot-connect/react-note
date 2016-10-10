@@ -18,6 +18,9 @@ export class ToolBar extends React.Component<IToolBarProps, IToolBarState>{
                 <Components.ToggleCodeComponent editorService={this.props.editorService} />
                 <Components.ToggleHeadingComponent editorService={this.props.editorService} />  
                 <Components.ToggleOrderedListComponent editorService={this.props.editorService} />  
+                <Components.PromoteBlockDethComponent editorService={this.props.editorService} />
+                <Components.DepromoteBlockDethComponent editorService={this.props.editorService} />
+                <Components.InsertLinkComponent editorService={this.props.editorService}/>
             </div>
         );
     }

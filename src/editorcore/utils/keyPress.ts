@@ -1,20 +1,26 @@
 /* @flow */
 
-import {
-  EditorState,
-  RichUtils,
-} from 'draft-js';
+import * as DraftJS from 'draft-js';
+
 import {
   insertNewUnstyledBlock,
   removeSelectedBlocksStyle,
   addLineBreakRemovingSelection,
 } from './block';
-import { isListBlock, changeDepth } from './list';
+
+import {
+  isListBlock,
+  changeDepth
+} from './list';
+
+import {
+  getIndentation
+} from './text';
 
 /**
 * Function will handle followind keyPress scenarios when Shift key is not pressed.
 */
-function handleHardNewlineEvent(editorState: EditorState): EditorState {
+export function handleHardNewlineEvent(editorState: DraftJS.EditorState): DraftJS.EditorState {
   const selection = editorState.getSelection();
   if (selection.isCollapsed()) {
     const contentState = editorState.getCurrentContent();
@@ -60,13 +66,39 @@ function isSoftNewlineEvent(e): boolean {
 * 4. Enter, Selection Collapsed ->
 *      if current block not of type list, a new unstyled block will be inserted.
 */
-export function handleNewLine(editorState: EditorState, event: Object): EditorState {
+export function handleNewLine(editorState: DraftJS.EditorState, event: Object): DraftJS.EditorState {
   if (isSoftNewlineEvent(event)) {
     const selection = editorState.getSelection();
     if (selection.isCollapsed()) {
-      return RichUtils.insertSoftNewline(editorState);
+      return DraftJS.RichUtils.insertSoftNewline(editorState);
     }
     return addLineBreakRemovingSelection(editorState);
   }
   return handleHardNewlineEvent(editorState);
+}
+
+export function insertOrReplaceTab(editorState: DraftJS.EditorState): DraftJS.EditorState {
+  let contentState = editorState.getCurrentContent();
+  let selection = editorState.getSelection();
+  let startKey = selection.getStartKey();
+  let currentBlock = contentState.getBlockForKey(startKey);
+
+  let indentation = getIndentation(currentBlock.getText());
+  let newContentState: DraftJS.ContentState;
+
+  if (selection.isCollapsed()) {
+    newContentState = DraftJS.Modifier.insertText(
+      contentState,
+      selection,
+      indentation
+    );
+  } else {
+    newContentState = DraftJS.Modifier.replaceText(
+      contentState,
+      selection,
+      indentation
+    );
+  }
+
+  return DraftJS.EditorState.push(editorState, newContentState, 'insert-characters');
 }

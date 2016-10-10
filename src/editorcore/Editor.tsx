@@ -3,18 +3,7 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
 import * as Rx from 'rxjs';
-import {
-  Editor,
-  EditorState,
-  ContentState,
-  CompositeDecorator,
-  getDefaultKeyBinding,
-  KeyBindingUtil,
-  DefaultDraftBlockRenderMap,
-  DraftBlockRenderConfig,
-  ContentBlock,
-  SelectionState
-} from 'draft-js';
+import * as DraftJS from 'draft-js';
 
 import Paper from 'material-ui/Paper';
 import Popover from 'material-ui/Popover/Popover';
@@ -28,7 +17,9 @@ import { EditorService, UiService } from '../services';
 import { MiniToolBar } from './mini-toolbar';
 import { ToolBar } from '../toolbar/toolbar';
 
-const { hasCommandModifier } = KeyBindingUtil;
+import 'draft-js/dist/Draft.css';
+
+const { hasCommandModifier } = DraftJS.KeyBindingUtil;
 
 function noop(): void { };
 
@@ -37,26 +28,26 @@ export interface EditorProps extends React.Props<EditorCore> {
   plugins?: Array<Plugin>;
   pluginConfig?: Object;
   prefixCls?: string;
-  onChange?: (editorState: EditorState) => EditorState;
+  onChange?: (editorState: DraftJS.EditorState) => DraftJS.EditorState;
   toolbars?: Array<any>;
   splitLine?: String;
   onKeyDown?: (ev: any) => boolean;
-  defaultValue?: EditorState;
+  defaultValue?: DraftJS.EditorState;
   placeholder?: string;
   onFocus?: () => void;
   onBlur?: () => void;
   style?: Object;
-  value?: EditorState | any;
+  value?: DraftJS.EditorState | any;
 }
 
 export interface EditorCoreState {
-  editorState?: EditorState;
+  editorState?: DraftJS.EditorState;
   customStyleMap?: Object;
   customBlockStyleMap?: Object;
-  blockRenderMap?: Map<String, DraftBlockRenderConfig>;
+  blockRenderMap?: Map<String, DraftJS.DraftBlockRenderConfig>;
   toolbarPlugins?: List<Plugin>;
   plugins?: Array<Plugin>;
-  compositeDecorator?: CompositeDecorator;
+  compositeDecorator?: DraftJS.CompositeDecorator;
   currentCursorBound?: ClientRect;
   miniToolbarOpen?: boolean;
   commands?: React.ReactNode;
@@ -68,7 +59,7 @@ export class EditorCore extends React.Component<EditorProps, EditorCoreState> {
   public configStore: ConfigStore = new ConfigStore();
   public controls: {
     editorContainer?: HTMLDivElement;
-    editor?: Editor;
+    editor?: DraftJS.Editor;
     miniToolBar?: MiniToolBar
   };
   public miniToolBarOpen: Rx.BehaviorSubject<boolean>;
@@ -90,15 +81,15 @@ export class EditorCore extends React.Component<EditorProps, EditorCoreState> {
 
     // this.plugins = List(List(props.plugins).flatten(true));
 
-    let editorState: EditorState = null;
+    let editorState: DraftJS.EditorState = null;
     if (props.value !== undefined) {
-      if (props.value instanceof EditorState) {
-        editorState = props.value || EditorState.createEmpty();
+      if (props.value instanceof DraftJS.EditorState) {
+        editorState = props.value || DraftJS.EditorState.createEmpty();
       } else {
-        editorState = EditorState.createEmpty();
+        editorState = DraftJS.EditorState.createEmpty();
       }
     } else {
-      editorState = EditorState.createEmpty();
+      editorState = DraftJS.EditorState.createEmpty();
     }
 
     editorState = this.generatorDefaultValue(editorState);
@@ -118,26 +109,76 @@ export class EditorCore extends React.Component<EditorProps, EditorCoreState> {
     }
   }
 
-  handleKeyCommand = (command: String): boolean => {
-    return command === 'split-block';
+  public render(): JSX.Element {
+    const prefixCls = 'react-note';
+    return (
+      <div style={{ minHeight: '45px', minWidth: '250px' }}>
+        <ToolBar editorService={this.manager}/>  
+        <Paper className={`${prefixCls}-editor`}
+          ref={ref => this.controls.editorContainer = ref}
+          onFocus={this.onEditorFocus}>
+          <div className={`${prefixCls}-editor-wrapper`}>
+            <DraftJS.Editor
+              ref={ref => this.controls.editor = ref}
+              editorState={this.state.editorState}
+              onChange={this.onChange}
+              handleKeyCommand={this.handleKeyCommand}
+              onTab={this.onTab}/>
+            {this.props.children}
+          </div>
+        </Paper>
+      </div>
+    );
   }
 
-  handleKeyBinding = (ev: React.KeyboardEvent): any => {
-    return getDefaultKeyBinding(ev);
+  private onTab = (event: React.KeyboardEvent) => {
+    event.preventDefault();
+    this.manager.handleTab();
+    // let editorState = this.getEditorState();
+    //     let newEditorState = DraftJS.RichUtils.onTab(event, editorState, 3);
+    //     debugger;
+    //     if (newEditorState !== editorState) {
+    //         this.setEditorState(newEditorState);
+    //     }
   }
 
-  setEditorState = (editorState: EditorState, focusEditor: boolean = false): void => {
-    let newEditorState: EditorState = editorState;
+  // private handleReturn = (event: React.KeyboardEvent): boolean => {
+  //   if (this.manager.handleReturnEmptyListItem()) {
+  //     return true;
+  //   }
+  //   return false;
+  // }
+
+  private handleKeyCommand = (command: string): boolean => {    
+    let editorState = this.state.editorState;
+    let newEditorState = DraftJS.RichUtils.handleKeyCommand(editorState, command);
+    if (newEditorState) {
+      this.onChange(newEditorState);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+ private handleKeyBinding = (ev: React.KeyboardEvent): any => {
+    return DraftJS.getDefaultKeyBinding(ev);
+  }
+
+ private onChange = (editorState: DraftJS.EditorState): void => {
 
     if (this.props.onChange) {
-      this.props.onChange(newEditorState);
+      this.props.onChange(editorState);
     }
-    if (!this.controlledMode) {
-      this.setState({ editorState: newEditorState }, focusEditor ? () => setTimeout(() => this.controls.editor.focus(), 100) : noop);
-    }
-  }
+ }
 
-  getBlockStyle = (contentBlock: ContentBlock): string => {
+ public setEditorState = (editorState: DraftJS.EditorState, focusEditor: boolean = false): void => {
+   let newEditorState: DraftJS.EditorState = editorState;
+   this.setState({ editorState: newEditorState }, focusEditor
+     ? () => setTimeout(() => this.controls.editor.focus(), 0)
+     : noop);
+ }
+
+  getBlockStyle = (contentBlock: DraftJS.ContentBlock): string => {
     const customBlockStyleMap = this.configStore.get('customBlockStyleMap');
     const type = contentBlock.getType();
     if (customBlockStyleMap.hasOwnProperty(type)) {
@@ -145,34 +186,25 @@ export class EditorCore extends React.Component<EditorProps, EditorCoreState> {
     }
   }
 
-  onMiniToolBarRequestClose = (reason: string): void => {
-    // this.setState({ currentCursorBound: null });
-    this.miniToolBarOpen.next(false);
+  public getEditorState = (): DraftJS.EditorState => {
+    return this.state.editorState;
   }
 
-  public getEditorState(text: string): EditorState {
+  public toEditorState(text: string): DraftJS.EditorState {
     return this.manager.toEditorState(text);
   }
 
-  public getText(encode: boolean = false): string {
-    return this.manager.getText(this.state.editorState, encode);
-  }
-
-  public getHtml(encode: boolean = false): string {
-    return this.manager.getHtml(this.state.editorState, encode);
-  }
-
   public Reset(): void {
-    this.setEditorState(
-      EditorState.push(this.state.editorState, this.props.defaultValue.getCurrentContent(), 'reset-editor')
+    this.onChange(
+      DraftJS.EditorState.push(this.state.editorState, this.props.defaultValue.getCurrentContent(), 'reset-editor')
     );
   }
 
   public SetText(text: string): void {
-    const createTextContentState = ContentState.createFromText(text || '');
-    const editorState = EditorState.push(this.state.editorState, createTextContentState, 'editor-setText');
+    const createTextContentState = DraftJS.ContentState.createFromText(text || '');
+    const editorState = DraftJS.EditorState.push(this.state.editorState, createTextContentState, 'editor-setText');
     this.setEditorState(
-      EditorState.moveFocusToEnd(editorState)
+      DraftJS.EditorState.moveFocusToEnd(editorState)
       , true);
   }
 
@@ -213,19 +245,23 @@ export class EditorCore extends React.Component<EditorProps, EditorCoreState> {
       const decorators = nextProps.value.getDecorator();
       const editorState = decorators
         ? nextProps.value
-        : EditorState.set(nextProps.value, { decorator: this.state.compositeDecorator });
+        : DraftJS.EditorState.set(nextProps.value, { decorator: this.state.compositeDecorator });
       this.setState({
         editorState,
       });
     }
   }
 
-  generatorDefaultValue(editorState: EditorState): EditorState {
+  generatorDefaultValue(editorState: DraftJS.EditorState): DraftJS.EditorState {
     const { defaultValue } = this.props;
     if (defaultValue) {
       return defaultValue;
     }
     return editorState;
+  }
+
+  public focus = (): void => {
+    this.onEditorFocus();
   }
 
   private onEditorFocus = (): void => {
@@ -255,31 +291,11 @@ export class EditorCore extends React.Component<EditorProps, EditorCoreState> {
   private onMiniToolBarOpenChanged = (value: boolean) => {
     if (value === false) {
       let contentState = this.state.editorState.getCurrentContent();
-      let newState = EditorState.forceSelection(this.state.editorState, contentState.getSelectionAfter());
+      let newState = DraftJS.EditorState.forceSelection(this.state.editorState, contentState.getSelectionAfter());
       this.setState({ editorState: newState, miniToolbarOpen: value });
       return;
     }
 
     this.setState({ miniToolbarOpen: value });
-  }
-
-  render(): JSX.Element {
-    const prefixCls = 'react-note';
-    return (
-      <div style={{ minHeight: '45px', minWidth: '250px' }}>
-        <ToolBar editorService={this.manager}/>  
-        <Paper className={`${prefixCls}-editor`}
-          ref={ref => this.controls.editorContainer = ref}
-          onFocus={this.onEditorFocus}>
-          <div className={`${prefixCls}-editor-wrapper`}>
-            <Editor
-              ref={ref => this.controls.editor = ref}
-              editorState={this.state.editorState}
-              onChange={this.setEditorState} />
-            {this.props.children}
-          </div>
-        </Paper>
-      </div>
-    );
   }
 }

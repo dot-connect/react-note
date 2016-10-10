@@ -3,14 +3,14 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as Rx from 'rxjs';
 
-import RaisedButton from 'material-ui/RaisedButton';
+import IconButton from 'material-ui/IconButton';
 import FormatListNumbered from 'material-ui/svg-icons/editor/format-list-numbered';
 
 import { EditorService } from '../services/editor-service';
 
 export class ToggleOrderedListComponent extends React.Component<IToggleOrderedListComponentProps, IToggleOrderedListComponentState> {
     private controls = {
-        button: RaisedButton
+        button: IconButton
     };
 
     private clickStream: Rx.Subscription = null;
@@ -52,9 +52,10 @@ export class ToggleOrderedListComponent extends React.Component<IToggleOrderedLi
 
     render(): JSX.Element {
         return (
-            <RaisedButton ref={ref => this.controls.button = ref}
-                disabled={this.state.isDisabled}
-                icon={<FormatListNumbered />} />
+            <IconButton ref={ref => this.controls.button = ref}
+                disabled={this.state.isDisabled}>
+                <FormatListNumbered />
+            </IconButton>
         );
     }    
 }

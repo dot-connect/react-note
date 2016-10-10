@@ -38,11 +38,13 @@ declare module "draft-js" {
   var KeyBindingUtil: KeyBindingUtil;
 
   import HandleKeyCommand = Draft.Model.Constants.DraftEditorCommand;
+  import DraftBlockType = Draft.Model.Constants.DraftBlockType;
 
   export {
     HandleKeyCommand,
     InlineStyles,
     DraftBlockRenderConfig,
-    BlockMap
+    BlockMap,
+    DraftBlockType
   }
 }
